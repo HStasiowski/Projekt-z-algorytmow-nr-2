@@ -1,0 +1,348 @@
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <time.h>
+#include <fstream>
+#include <chrono>
+using namespace std;
+
+void sortowanieGnoma(int* lista, int n)
+{
+    int start = 0;
+    int koniec = 0;
+    while (start < n)
+    {
+        if (start == 0 || lista[start] >= lista[start - 1])
+        {
+            start = koniec + 1;
+            koniec = start;
+        }
+        else
+        {
+            swap(lista[start], lista[start - 1]);
+            start = start - 1;
+        }
+    }
+}
+void kopcowanie(int* tab, int n, int i)
+{
+    int najwiekszy = i; // najwiekszy korzen
+    int l = 2 * i + 1; // l=lewe dziecko
+    int p = 2 * i + 2; // p=prawe dziecko
+
+
+    if (l < n && tab[l] > tab[najwiekszy])
+        najwiekszy = l;
+
+
+    if (p < n && tab[p] > tab[najwiekszy])
+        najwiekszy = p;
+
+
+    if (najwiekszy != i)
+    {
+        swap(tab[i], tab[najwiekszy]); //jezeli najwieksze nie jest korzeniem
+
+        kopcowanie(tab, n, najwiekszy);
+    }
+
+}
+void sortowanieKopcowe(int* tab, int n)
+{
+    // zmiana tablicy
+    for (int i = n / 2 - 1; i >= 0; i--)
+        kopcowanie(tab, n, i);
+
+
+    for (int i = n - 1; i > 0; i--)
+    {
+
+        swap(tab[0], tab[i]); //przesuniecie najwiekszego korzenia na koniec
+
+        kopcowanie(tab, i, 0); //usuniecie najwiekszego korzenia
+    }
+}
+
+int * losowanie_tablicy( int n ) //funkcja pozwalajaca wylosowac dana tablice, do uzycia w sortowaniu oczekiwanym
+{
+    n = 10000;
+    int * lista = new int [ n ];
+    srand(( unsigned )time( NULL ));
+    for ( int i = 0; i < n ; i++)
+    {
+        lista[i] = (rand() % 10000 + 1); //sortowanie liczb z przedzia³u 0-10000
+    }
+    return lista;
+}
+void oczekiwane()
+{
+    fstream out;
+    out.open("wyniki_testow_oczekiwane.txt",ios::out);
+    int n;
+    cout<<"Podaj rozmiar tablicy:"<<endl;
+    cin>>n;
+    int * lista = losowanie_tablicy(n);
+    int* kopialisty = new int[n]; //kopia wylosowanej liczby jest potrzebna, aby po pierwszym sortowaniu, sortowanie kopcowe nie otrzyma³o posortowanej tablicy
+    for (int i = 0; i < n; i++)
+    {
+        kopialisty[i]=lista[i];
+    }
+
+    cout<<"Prosze czekac"<<endl;
+    auto start_gnoma=std::chrono::system_clock::now(); //start liczenia czasu
+    sortowanieGnoma(kopialisty, n);
+    auto koniec_gnoma=std::chrono::system_clock::now();//Zapisanie czasu po zakonczeniu sortowania
+    std::chrono::duration<double>czas_gnoma=koniec_gnoma-start_gnoma;
+    for (int i = 0; i < n; i++)
+        out<<kopialisty[i]<<" ";
+    out<<endl;
+    out<<"Posortowanie gnoma zajelo: "<< czas_gnoma.count() <<"s"<<endl;
+    out<<endl<<endl;
+    delete kopialisty;
+
+    kopialisty = new int[n];
+    for (int i = 0; i < n; i++)
+    {
+        kopialisty[i]=lista[i];
+    }
+
+    std::cout << "\n\n";
+
+    auto start_kopcowe=std::chrono::system_clock::now(); //start liczenia czasu
+    sortowanieKopcowe(kopialisty,n);
+    auto koniec_kopcowe=std::chrono::system_clock::now();//zapisanie czasu po sortowaniu
+    std::chrono::duration<double>czas_kopcowe=koniec_kopcowe-start_kopcowe;
+    for (int i = 0; i < n; i++)
+        out<<kopialisty[i]<<" ";
+    out<<endl;
+    out<<"Posortowanie gnoma zajelo: "<< czas_gnoma.count() <<"s"<<endl;
+    out<<"Posortowanie kopcowe zajelo: "<< czas_kopcowe.count() <<"s"<<endl;
+    delete kopialisty;
+    cout<<"wynik sortowania znajduje sie w pliku wyniki_testow_oczekiwane.txt"<<endl;
+    system("pause");
+    out.close();
+}
+void sortowanie_z_pliku_Gnoma()
+{
+    fstream out;
+    out.open("wyniki_z_pliku_gnoma.txt",ios::out);//Utworzenie pliku na wyniki
+    int tab[1000]= {0}; //Utworzenie tablicy o wielkosci 1000 i wypelnienie jej zerami
+    int tmp = 0;//zmienna pomagajaca wpisac wartosci z pliku do tablicy
+    fstream in;
+    string plik;
+    cout<<"Podaj nazwe pliku lub jego sciezke: ";
+    cin>>plik;
+    in.open(plik,ios::in);//otwarcie pliku
+    if(in.good()==false)//jezeli podana nazwa lub sciezka bedzie bledna to wyswietli sie komunikat:
+    {
+        cout<<"Nie ma takiego pliku pliku"<<endl;
+    }
+    else
+    {
+        while (!in.eof())//Petla while wykonuje sie dopoki nie dotrze do konca pliku
+        {
+            in >> tab[tmp++];
+        }
+
+        in.close();
+
+        sortowanieGnoma(tab,tmp);
+        cout<<endl<<endl<<"Posortowana tablica: "<<endl;
+        for(int i=0; i<tmp; i++)
+        {
+            cout<<tab[i]<<" ";
+            out<<tab[i]<<" ";
+        }
+        cout<<endl;
+        cout<<"Sortowanie zakonczone. Wyniki zostaly zapisane w pliku: wyniki_z_pliku_gnoma.txt"<<endl;
+    }
+    out.close();
+}
+void sortowanie_z_pliku_Kopcowe()
+{
+    fstream out;
+    out.open("wyniki_z_pliku_kopcowe.txt",ios::out);//Utworzenie pliku na wyniki
+    int tab2[1000]= {0}; //Utworzenie tablicy o wielkosci 1000 i wypelnienie jej zerami
+    int tmp = 0;//zmienna pomagajaca wpisac wartosci z pliku do tablicy
+    fstream in;
+    string plik;
+    cout<<"Podaj nazwe pliku lub jego sciezke: ";
+    cin>>plik;
+    in.open(plik,ios::in);//otwarcie pliku
+    if(in.good()==false)//jezeli podana nazwa lub sciezka bedzie bledna to wyswietli sie komunikat:
+    {
+        cout<<"Nie ma takiego pliku"<<endl;
+    }
+    else
+    {
+        while (!in.eof())//Petla while wykonuje sie dopoki nie dotrze do konca pliku
+        {
+            in >> tab2[tmp++];
+        }
+
+        in.close();
+
+
+        cout<<endl<<endl<<"Posortowana tablica sortowaniem kopcowym: "<<endl;
+        sortowanieKopcowe(tab2,tmp);
+        for(int i=0; i<tmp; i++)
+        {
+            cout<<tab2[i]<<" ";
+            out<<tab2[i]<<" ";
+        }
+        cout<<endl;
+        cout<<"Sortowanie zakonczone. Wyniki zostaly zapisane w pliku: wyniki_z_pliku_kopcowe.txt"<<endl;
+    }
+    out.close();
+}
+void pesymistyczne()
+{
+    int ilosc;
+    int *tab;
+    int *tab2;
+    fstream out;
+    out.open("wyniki_testow_pesymistyczny.txt",ios::out);//Utworzenie pliku na wyniki
+    cout<<"Podaj rozmiar tablicy: ";
+    cin>>ilosc;
+    cout<<"Prosze czekac"<<endl;
+    tab=new int[ilosc];
+    out<<endl<<"Tablica przed posortowaniem: "<<endl;
+    for(int i=ilosc; i>=0; i--)
+    {
+        tab[i]=i;
+        out<<tab[i]<<" ";
+    }
+    out<<endl<<endl;
+    auto start_gnoma=std::chrono::system_clock::now();//Zapisanie czasu przed rozpoczeciem sortowania
+    sortowanieGnoma(tab,ilosc);
+    auto koniec_gnoma=std::chrono::system_clock::now();//Zapisanie czasu po zakonczeniu sortowania
+    std::chrono::duration<double>czas_gnoma=koniec_gnoma-start_gnoma;//Obliczanie czasu jaki byl potrzebny na posortowanie tablicy
+    out<<"Posortowana tablica za pomoca sortowania gnoma: "<<endl;
+    for(int i=0; i<ilosc; i++)
+        out<<tab[i]<<" ";
+    out<<endl<<endl;
+    delete [] tab;
+
+    tab2=new int[ilosc];
+    out<<endl<<"Tablica przed posortowaniem: "<<endl;
+    for(int i=ilosc; i>=0; i--)
+    {
+        tab2[i]=i;
+        out<<tab2[i]<<" ";
+    }
+    out<<endl<<endl;
+
+    auto start_kopcowe=std::chrono::system_clock::now();//Zapisanie czasu przed rozpoczeciem sortowania
+    sortowanieKopcowe(tab2,ilosc);
+    auto koniec_kopcowe=std::chrono::system_clock::now();//Zapisanie czasu po zakonczeniu sortowania
+    std::chrono::duration<double>czas_kopcowe=koniec_kopcowe-start_kopcowe;//Obliczanie czasu jaki byl potrzebny na posortowanie tablicy
+    out<<"Posortowana tablica za pomoca sortowania kopcowego: "<<endl;
+    for(int i=0; i<ilosc; i++)
+        out<<tab2[i]<<" ";
+    out<<endl<<endl;
+    cout<<"Wyniki zostaly zapisane w pliku: wyniki_testow_pesymistyczny.txt"<<endl;
+    delete [] tab2;
+    out<<"Posortowanie gnoma zajelo: "<<czas_gnoma.count()<<"s"<<endl<<endl;
+    out<<"Posortowanie kopcowe zajelo: "<<czas_kopcowe.count()<<"s"<<endl<<endl;
+    out.close();
+}
+void optymistyczne()
+{
+    int ilosc;
+    int *tab;
+    int *tab2;
+    fstream out;
+    out.open("wyniki_testow_optymistyczny.txt",ios::out);//Utworzenie pliku na wyniki
+    cout<<"Podaj rozmiar tablicy: ";
+    cin>>ilosc;
+    cout<<"Prosze czekac"<<endl;
+    tab=new int[ilosc];
+    out<<endl<<"Tablica przed sortowaniem: "<<endl;
+    for(int i=0; i<ilosc; i++)
+    {
+        tab[i]=i;
+        out<<tab[i]<<" ";
+    }
+    out<<endl<<endl;
+    auto start_gnoma=std::chrono::system_clock::now();//Zapisanie czasu przed sortowaniem
+    sortowanieGnoma(tab,ilosc);
+    auto koniec_gnoma=std::chrono::system_clock::now();//Zapisanie czasu po sortowaniu
+    std::chrono::duration<double>czas_gnoma=koniec_gnoma-start_gnoma;//czas potrzebny na posortowanie
+    out<<"Posortowana tablica za pomoca sortowania gnoma: "<<endl;
+    for(int i=0; i<ilosc; i++)
+        out<<tab[i]<<" ";
+    out<<endl<<endl;
+    delete [] tab;
+
+    tab2=new int[ilosc];
+    out<<endl<<"Tablica przed posortowaniem: "<<endl;
+    for(int i=0; i<ilosc; i++)
+    {
+        tab2[i]=i;
+        out<<tab2[i]<<" ";
+    }
+    out<<endl<<endl;
+
+    auto start_kopcowe=std::chrono::system_clock::now();//Zapisanie czasu przed sortowaniem
+    sortowanieKopcowe(tab2,ilosc);
+    auto koniec_kopcowe=std::chrono::system_clock::now();//Zapisanie czasu po sortowaniu
+    std::chrono::duration<double>czas_kopcowe=koniec_kopcowe-start_kopcowe;//Obliczanie czasu sortowania
+    out<<"Posortowana tablica za pomoca sortowania kopcowego: "<<endl;
+    for(int i=0; i<ilosc; i++)
+        out<<tab[i]<<" ";
+    out<<endl;
+    cout<<"Sortowanie zakonczone. Wyniki zostaly zapisane w pliku: wyniki_testow_optymistyczny.txt"<<endl;
+    delete [] tab2;
+    out<<"Posortowanie gnoma zajelo: "<<czas_gnoma.count()<<"s"<<endl;
+    out<<"Posortowanie kopcowe zajelo: "<<czas_kopcowe.count()<<"s"<<endl;
+    out.close();
+}
+int main()
+{
+
+    int opcje;
+    cout<<"Wybierz opcje od 1-5."<<endl;
+    cout<<"Opcja 1, to sortowanie oczekiwane."<<endl;
+    cout<<"Opcja 2, to sortowanie z pliku gnoma."<<endl;
+    cout<<"Opcja 3, to sortowanie z pliku kopcowe."<<endl;
+    cout<<"Opcja 4, to sortowanie pesymistyczne."<<endl;
+    cout<<"Opcja 5, to sortowanie optymistyczne."<<endl;
+    cin>>opcje;
+    switch(opcje) //ulatwienie dostepu do wykorzystywanych funkcji
+    {
+    case 1:
+    {
+        oczekiwane();
+        break;
+    }
+    case 2:
+    {
+        cout<<"Plik powinien zawierac liczby oddzielone enterem!"<<endl;
+        sortowanie_z_pliku_Gnoma();
+        break;
+    }
+    case 3:
+    {
+        cout<<"Plik powinien zawierac liczby oddzielone enterem!"<<endl;
+        sortowanie_z_pliku_Kopcowe();
+        break;
+    }
+    case 4:
+    {
+        pesymistyczne();
+        break;
+    }
+    case 5:
+    {
+        optymistyczne();
+        break;
+    }
+    default:
+    {
+        cout<<"Nie ma takiej opcji";
+        break;
+    }
+    return 0;
+    }
+}
